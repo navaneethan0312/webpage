@@ -5,49 +5,35 @@ pipeline {
         choice(
             name: 'ENV',
             choices: ['dev', 'test', 'prod'],
-            description: 'Select deployment environment'
+            description: 'Choose environment'
         )
     }
 
     environment {
-        SERVER_IP   = '35.154.83.119'
-        SERVER_USER = 'ec2-user'
-        APP_DIR     = '/home/ubuntu' 
-        SSH_KEY     = '/var/lib/jenkins/devOpslearningFeb2026.pem'
+        SERVER = '35.154.83.119'
+        USER = 'ec2-user'
+        KEY = '/home/jenkins/devOpslearningFeb2026.pem'
     }
 
     stages {
 
-        stage('Deploy Files') {
+        stage('Checkout Code') {
             steps {
-                sh """
-                    scp -i ${SSH_KEY} -o StrictHostKeyChecking=no -r * \
-                    ${SERVER_USER}@${SERVER_IP}:${APP_DIR}/${params.ENV}/
-                """
+                git 'https://github.com/navaneethan0312/DevOps-Training-.git'
             }
         }
 
-        stage('Switch Environment') {
+        stage('Deploy to Server') {
             steps {
-                sh """
-                    ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no \
-                    ${SERVER_USER}@${SERVER_IP} '
-                        ln -sfn ${APP_DIR}/${params.ENV} ${APP_DIR}/current
-                        sudo systemctl reload nginx
-                    '
-                """
+                sh '''
+                ssh -i $KEY -o StrictHostKeyChecking=no $USER@$SERVER << 'EOF'
+                sudo rm -rf /var/www/devops-site/*
+                sudo cp -r /var/lib/jenkins/workspace/* /var/www/devops-site/
+                sudo systemctl restart nginx
+                EOF
+                '''
             }
         }
 
-        stage('Verify Deployment') {
-            steps {
-                sh """
-                    ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no \
-                    ${SERVER_USER}@${SERVER_IP} '
-                        ls -l ${APP_DIR}/current
-                    '
-                """
-            }
-        }
     }
 }
