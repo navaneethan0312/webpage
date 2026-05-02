@@ -12,7 +12,7 @@ pipeline {
     environment {
         SERVER = '35.154.83.119'
         USER = 'ec2-user'
-        KEY = '/home/jenkins/devOpslearningFeb2026.pem'
+        KEY = '/home/navaneethan/devOpslearningFeb2026.pem'
     }
 
     stages {
