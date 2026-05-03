@@ -20,7 +20,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "GitHub-ல இருந்து code எடுக்கிறோம்..."
-                git url: "${REPO_URL}", branch: 'main'
+                git url: "${REPO_URL}", branch: 'master'
             }
         }
 
