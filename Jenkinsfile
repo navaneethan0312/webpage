@@ -25,34 +25,34 @@ pipeline {
         }
 
         stage('Deploy') {
-            steps {
-                echo "${params.ENVIRONMENT} environment-ல deploy பண்றோம்..."
-                sshagent(['ec2-deploy-key']) {
-                    sh """
-                        # Deploy folder clear பண்ணி புது files copy பண்ணு
-                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} \
-                            "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
-                        
-                        scp -o StrictHostKeyChecking=no -r ./* \
-                            ${SERVER_USER}@${SERVER_IP}:${DEPLOY_PATH}/
-                    """
-                }
-            }
+    steps {
+        echo "${params.ENVIRONMENT} environment-ல deploy பண்றோம்..."
+        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-deploy-key', keyFileVariable: 'SSH_KEY')]) {
+            sh """
+                chmod 600 $SSH_KEY
+                ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@${SERVER_IP} \
+                    "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
+                scp -o StrictHostKeyChecking=no -i $SSH_KEY -r ./* \
+                    ec2-user@${SERVER_IP}:${DEPLOY_PATH}/
+            """
         }
+    }
+}
 
-        stage('Update Nginx') {
-            steps {
-                echo "Nginx-ஐ ${params.ENVIRONMENT} folder-க்கு point பண்றோம்..."
-                sshagent(['ec2-deploy-key']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} \
-                        "sudo sed -i 's|root /var/www/.*;|root /var/www/${params.ENVIRONMENT};|' \
-                        /etc/nginx/sites-available/devops-learning && \
-                        sudo systemctl reload nginx"
-                    """
-                }
-            }
+stage('Update Nginx') {
+    steps {
+        echo "Nginx-ஐ ${params.ENVIRONMENT} folder-க்கு point பண்றோம்..."
+        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-deploy-key', keyFileVariable: 'SSH_KEY')]) {
+            sh """
+                chmod 600 $SSH_KEY
+                ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@${SERVER_IP} \
+                "sudo sed -i 's|root /var/www/.*;|root /var/www/${params.ENVIRONMENT};|' \
+                /etc/nginx/sites-available/devops-learning && \
+                sudo systemctl reload nginx"
+            """
         }
+    }
+}
 
         stage('Done') {
             steps {
