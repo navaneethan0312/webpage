@@ -8,9 +8,10 @@ pipeline {
             description: 'Select the environment to deploy'
         )
         string(
-            name: 'PEM_PATH',
-            defaultValue: '/var/lib/jenkins/devOpslearningFeb2026.pem',
-        )
+    name: 'PEM_PATH',
+    defaultValue: '/var/lib/jenkins/devOpslearningFeb2026.pem',
+    description: 'Full path to your PEM key file on this machine'
+)
     }
 
     environment {
