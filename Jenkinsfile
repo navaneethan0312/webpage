@@ -3,45 +3,60 @@ pipeline {
 
     parameters {
         choice(
-            name: 'ENV',
-            choices: ['dev', 'test', 'prod'],
-            description: 'Choose environment'
+            name: 'ENVIRONMENT',
+            choices: ['dev', 'test', 'production'],
+            description: 'எந்த environment-ல deploy பண்ணணும்?'
         )
     }
 
     environment {
-        SERVER = '35.154.83.119'
-        USER = 'ec2-user'
-        KEY = '/home/navaneethan/devOpslearningFeb2026.pem'
+        SERVER_IP = '35.154.83.119'
+        SERVER_USER = 'ec2user'
+        DEPLOY_PATH = "/var/www/${params.ENVIRONMENT}"
+        REPO_URL = 'https://github.com/navaneethan0312/DevOps-Training-.git'
     }
 
     stages {
-
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git 'https://github.com/navaneethan0312/DevOps-Training-.git'
+                echo "GitHub-ல இருந்து code எடுக்கிறோம்..."
+                git url: "${REPO_URL}", branch: 'main'
             }
         }
 
-        stage('Deploy to Server') {
+        stage('Deploy') {
             steps {
-                sh '''
-                ssh -i $KEY -o StrictHostKeyChecking=no $USER@$SERVER << 'EOF'
+                echo "${params.ENVIRONMENT} environment-ல deploy பண்றோம்..."
+                sshagent(['ec2-deploy-key']) {
+                    sh """
+                        # Deploy folder clear பண்ணி புது files copy பண்ணு
+                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} \
+                            "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
+                        
+                        scp -o StrictHostKeyChecking=no -r ./* \
+                            ${SERVER_USER}@${SERVER_IP}:${DEPLOY_PATH}/
+                    """
+                }
+            }
+        }
 
-                # remove old files
-                sudo rm -rf /var/www/devops-site/*
+        stage('Update Nginx') {
+            steps {
+                echo "Nginx-ஐ ${params.ENVIRONMENT} folder-க்கு point பண்றோம்..."
+                sshagent(['ec2-deploy-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} \
+                        "sudo sed -i 's|root /var/www/.*;|root /var/www/${params.ENVIRONMENT};|' \
+                        /etc/nginx/sites-available/devops-learning && \
+                        sudo systemctl reload nginx"
+                    """
+                }
+            }
+        }
 
-                # copy latest code from GitHub clone location (via Jenkins workspace)
-                sudo cp -r /var/lib/jenkins/workspace/* /var/www/devops-site/
-
-                # fix permission
-                sudo chmod -R 755 /var/www/devops-site
-
-                # restart nginx
-                sudo systemctl restart nginx
-
-                EOF
-                '''
+        stage('Done') {
+            steps {
+                echo "✅ Deploy complete! http://devops-learning.bontonsoftwares.com பாரு"
             }
         }
     }
