@@ -30,17 +30,29 @@ pipeline {
         }
 
         stage('Deploy') {
-            steps {
-                echo "Deploying to ${params.ENVIRONMENT} environment..."
-                sh """
-                    chmod 600 ${params.PEM_PATH}
-                    ssh -o StrictHostKeyChecking=no -i ${params.PEM_PATH} ${SERVER_USER}@${SERVER_IP} \
-                        "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
-                    scp -o StrictHostKeyChecking=no -i ${params.PEM_PATH} -r ./HTML/* \
-                        ${SERVER_USER}@${SERVER_IP}:${DEPLOY_PATH}/
-                """
-            }
-        }
+    steps {
+        echo "Deploying to ${params.ENVIRONMENT} environment..."
+        sh """
+            chmod 600 ${params.PEM_PATH}
+            
+            # Server-ல folder clean பண்ணு
+            ssh -o StrictHostKeyChecking=no -i ${params.PEM_PATH} ${SERVER_USER}@${SERVER_IP} \
+                "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
+            
+            # HTML files copy பண்ணு
+            scp -o StrictHostKeyChecking=no -i ${params.PEM_PATH} -r ./HTML/* \
+                ${SERVER_USER}@${SERVER_IP}:${DEPLOY_PATH}/
+            
+            # CSS folder copy பண்ணு
+            scp -o StrictHostKeyChecking=no -i ${params.PEM_PATH} -r ./CSS \
+                ${SERVER_USER}@${SERVER_IP}:${DEPLOY_PATH}/
+            
+            # Images folder copy பண்ணு
+            scp -o StrictHostKeyChecking=no -i ${params.PEM_PATH} -r ./Images \
+                ${SERVER_USER}@${SERVER_IP}:${DEPLOY_PATH}/
+        """
+    }
+}
 
         stage('Update Nginx') {
             steps {
