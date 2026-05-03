@@ -9,7 +9,7 @@ pipeline {
         )
         string(
             name: 'PEM_PATH',
-            defaultValue: '/home/navaneethan/devOpslearningFeb2026.pem',
+            defaultValue: '/var/lib/jenkins/devOpsLearningFeb2026.pem',
         )
     }
 
