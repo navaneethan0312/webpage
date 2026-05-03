@@ -24,7 +24,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+       stage('Deploy') {
     steps {
         echo "${params.ENVIRONMENT} environment-ல deploy பண்றோம்..."
         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-deploy-key', keyFileVariable: 'SSH_KEY')]) {
@@ -32,7 +32,7 @@ pipeline {
                 chmod 600 $SSH_KEY
                 ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@${SERVER_IP} \
                     "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
-                scp -o StrictHostKeyChecking=no -i $SSH_KEY -r ./* \
+                scp -o StrictHostKeyChecking=no -i $SSH_KEY -r ./HTML/* \
                     ec2-user@${SERVER_IP}:${DEPLOY_PATH}/
             """
         }
