@@ -5,13 +5,13 @@ pipeline {
         choice(
             name: 'ENVIRONMENT',
             choices: ['dev', 'test', 'production'],
-            description: 'எந்த environment-ல deploy பண்ணணும்?'
+            description: 'Select the environment to deploy'
         )
     }
 
     environment {
         SERVER_IP = '35.154.83.119'
-        SERVER_USER = 'ec2user'
+        SERVER_USER = 'ec2-user'
         DEPLOY_PATH = "/var/www/${params.ENVIRONMENT}"
         REPO_URL = 'https://github.com/navaneethan0312/DevOps-Training-.git'
     }
@@ -19,44 +19,44 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "GitHub-ல இருந்து code எடுக்கிறோம்..."
+                echo "Fetching code from GitHub..."
                 git url: "${REPO_URL}", branch: 'master'
             }
         }
 
-       stage('Deploy') {
-    steps {
-        echo "${params.ENVIRONMENT} environment-ல deploy பண்றோம்..."
-        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-deploy-key', keyFileVariable: 'SSH_KEY')]) {
-            sh """
-                chmod 600 $SSH_KEY
-                ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@${SERVER_IP} \
-                    "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
-                scp -o StrictHostKeyChecking=no -i $SSH_KEY -r ./HTML/* \
-                    ec2-user@${SERVER_IP}:${DEPLOY_PATH}/
-            """
+        stage('Deploy') {
+            steps {
+                echo "Deploying to ${params.ENVIRONMENT} environment..."
+                withCredentials([sshUserPrivateKey(credentialsId: 'ec2-deploy-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh """
+                        chmod 600 $SSH_KEY
+                        ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@${SERVER_IP} \
+                            "rm -rf ${DEPLOY_PATH}/* && mkdir -p ${DEPLOY_PATH}"
+                        scp -o StrictHostKeyChecking=no -i $SSH_KEY -r ./HTML/* \
+                            ec2-user@${SERVER_IP}:${DEPLOY_PATH}/
+                    """
+                }
+            }
         }
-    }
-}
 
-stage('Update Nginx') {
-    steps {
-        echo "Nginx-ஐ ${params.ENVIRONMENT} folder-க்கு point பண்றோம்..."
-        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-deploy-key', keyFileVariable: 'SSH_KEY')]) {
-            sh """
-                chmod 600 $SSH_KEY
-                ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@${SERVER_IP} \
-                "sudo sed -i 's|root /var/www/.*;|root /var/www/${params.ENVIRONMENT};|' \
-                /etc/nginx/sites-available/devops-learning && \
-                sudo systemctl reload nginx"
-            """
+        stage('Update Nginx') {
+            steps {
+                echo "Pointing Nginx to ${params.ENVIRONMENT} folder..."
+                withCredentials([sshUserPrivateKey(credentialsId: 'ec2-deploy-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh """
+                        chmod 600 $SSH_KEY
+                        ssh -o StrictHostKeyChecking=no -i $SSH_KEY ec2-user@${SERVER_IP} \
+                        "sudo sed -i 's|root /var/www/.*;|root /var/www/${params.ENVIRONMENT};|' \
+                        /etc/nginx/sites-available/devops-learning && \
+                        sudo systemctl reload nginx"
+                    """
+                }
+            }
         }
-    }
-}
 
         stage('Done') {
             steps {
-                echo "✅ Deploy complete! http://devops-learning.bontonsoftwares.com பாரு"
+                echo "Deploy complete! Visit: http://devops-learning.bontonsoftwares.com"
             }
         }
     }
