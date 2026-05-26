@@ -26,3 +26,4 @@ The CSS code defines the styles for different elements in the webpage, such as t
 
 Note: The code references external resources such as font files and images. Make sure to have the necessary files in the specified locations or update the file paths accordingly for the website to display correctly.
 Dev Environment
+pipeline test
